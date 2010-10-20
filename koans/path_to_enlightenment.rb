@@ -1,5 +1,11 @@
 # The path to Ruby Enlightenment starts with the following:
 
+begin
+  require 'Win32/Console/ANSI' if RUBY_PLATFORM =~ /win32/
+rescue LoadError
+  raise 'You must gem install win32console to use color on Windows'
+end
+
 $LOAD_PATH << File.dirname(__FILE__)
 
 require 'about_asserts'

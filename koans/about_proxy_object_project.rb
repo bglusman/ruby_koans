@@ -15,10 +15,31 @@ require File.expand_path(File.dirname(__FILE__) + '/edgecase')
 class Proxy
   def initialize(target_object)
     @object = target_object
+    @messages = Hash.new(0)
     # ADD MORE CODE HERE
   end
 
   # WRITE CODE HERE
+  def messages
+    @messages.keys
+  end
+
+  def called?(method)
+    @messages[method] > 0
+  end
+
+  def number_of_times_called(method)
+    @messages[method]
+  end
+
+  def method_missing(name, *args)
+    if @object.respond_to?(name)
+      @messages[name] +=1
+      args.size == 0 ? @object.send(name) : @object.send(name, args)
+    else
+      super
+    end
+  end
 end
 
 # The proxy object should pass the following Koan:
@@ -37,7 +58,7 @@ class AboutProxyObjectProject < EdgeCase::Koan
     tv.channel = 10
     tv.power
     
-    assert_equal 10, tv.channel
+    assert_equal [10], tv.channel
     assert tv.on?
   end
 

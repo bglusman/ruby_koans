@@ -1,4 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/edgecase')
+  HUNDRED_POINT_DIE = 1
+  FIFTY_POINT_DIE = 5
+  HUNDRED_POINT_STANDIN = 10
 
 # Greed is a dice game where you roll up to five dice to accumulate
 # points.  The following "score" function will be used calculate the
@@ -29,8 +32,32 @@ require File.expand_path(File.dirname(__FILE__) + '/edgecase')
 #
 # Your goal is to write the score method.
 
+def score_triples!(dice)
+ sum = 0
+ group = dice.group_by { |i| i }
+ group.each do |die, subgroup|
+     if subgroup.size > 2
+       sum += 100 * die
+       subgroup.pop(3)
+     end
+   end
+   dice.replace(group.values.flatten)
+ sum
+end
+
 def score(dice)
   # You need to write this method
+  sum = 0
+  while temp=dice.find_index(HUNDRED_POINT_DIE)
+    dice[temp]=HUNDRED_POINT_STANDIN
+  end
+  if dice.uniq.size <= dice.size - 2
+    sum += score_triples!(dice)
+  end
+
+  point_die = dice.select {|die| die == HUNDRED_POINT_STANDIN || die == FIFTY_POINT_DIE}
+  point_die.each {|die| sum += die*10}
+  return sum
 end
 
 class AboutScoringProject < EdgeCase::Koan
