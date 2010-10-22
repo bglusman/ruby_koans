@@ -1,21 +1,30 @@
 require File.expand_path(File.dirname(__FILE__) + '/edgecase')
 
 $LOAD_PATH << File.dirname(__FILE__)
-require 'about_scoring_project'
-require 'about_dice_project'
 
 require 'rubygems'
 require 'rr'
 #require 'test/unit'
+
+HUNDRED_POINT_DIE = 1
+FIFTY_POINT_DIE = 5
+HUNDRED_POINT_STANDIN = 10
 
 class EdgeCase::Koan
   include RR::Adapters::TestUnit
 end
 
 class GreedGame
-  attr :dice
+  attr :dice, :players
 
   class TurnSequenceError < StandardError ; end
+
+  class DiceSet
+    attr_reader :values
+    def roll(n)
+      @values = (1..n).map { rand(6) + 1 }
+    end
+  end
 
   class Player
     attr_accessor :score, :roll_score, :game, :unscored_dice
@@ -32,12 +41,12 @@ class GreedGame
     end
 
     def roll
-      if unscored_dice == []
+      if unscored_dice.nil?
+        raise TurnSequenceError
+      elsif unscored_dice == []
         temp_dice = game.initial_roll
         self.roll_score = game.score(temp_dice, unscored_dice)
         return [self.roll_score, temp_dice, unscored_dice]
-      elsif unscored_dice.nil?
-        raise TurnSequenceError
       else
         temp_dice = game.continuing_roll(unscored_dice)
         self.roll_score += game.score(temp_dice, unscored_dice)
