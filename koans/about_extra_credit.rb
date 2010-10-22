@@ -55,6 +55,13 @@ class GreedGame
       end
     end
 
+    def finish_turn
+      self.score += roll_score
+      self.unscored_dice = nil
+      my_index = game.players.index(self)
+      game.players[(my_index + 1)% game.players.size].unscored_dice = []
+    end
+
   end
 
   def initialize
@@ -73,6 +80,10 @@ class GreedGame
   def new_player
     @players << Player.new(self)
     @players.last
+  end
+
+  def current_player
+    @players.select {|player| not player.unscored_dice.nil?}[0]
   end
 
   def score_triples!(dice)
@@ -149,6 +160,26 @@ class AboutExtraCredit < EdgeCase::Koan
 
     stub(game).initial_roll {[5,5,5,3,4]} ; player1.unscored_dice=[]
     assert_equal [500, [5,5,5,3,4], [3,4]], player1.roll
+  end
+
+  def test_player_sequence
+    game = GreedGame.new
+    player1 = game.new_player
+    player2 = game.new_player
+    player3 = game.new_player
+
+    stub(game).initial_roll {[5,5,5,3,4]}
+    player1.roll
+    player1.finish_turn
+    assert_equal player2, game.current_player
+    stub(game).initial_roll {[1,1,1,3,4]}
+    player2.roll
+    player2.finish_turn
+    assert_equal player3, game.current_player
+    stub(game).initial_roll {[2,2,2,3,4]}
+    player3.roll
+    player3.finish_turn
+    assert_equal player1, game.current_player
 
   end
 end
