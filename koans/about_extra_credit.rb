@@ -37,12 +37,12 @@ class GreedGame
     end
 
     def in_the_game?
-      @qualified
+      @qualified = self.roll_score >= 300 || @qualified
     end
 
     def roll
-      if unscored_dice.nil?
-        raise TurnSequenceError
+      if game.current_player != self
+        raise TurnSequenceError.new("Roll during different player's turn attempted")
       elsif unscored_dice == []
         temp_dice = game.initial_roll
         self.roll_score = game.score(temp_dice, unscored_dice)
@@ -51,17 +51,25 @@ class GreedGame
         temp_dice = game.continuing_roll(unscored_dice)
         self.roll_score += game.score(temp_dice, unscored_dice)
         return [self.roll_score, temp_dice, unscored_dice] unless temp_dice.size == unscored_dice.size
-        return [self.roll_score=0, temp_dice, self.unscored_dice=nil]
+        return [self.roll_score=0, temp_dice, self.finish_turn]
       end
     end
 
     def finish_turn
-      self.score += roll_score
+      if game.current_player != self
+        raise TurnSequenceError.new("Finish turn during different player's turn attempted")
+        return
+      elsif self.in_the_game?
+        self.score += roll_score
+        if self.score > 3000
+          #TODO - trigger final round, declare winner
+        end
+      end
       self.unscored_dice = nil
-      my_index = game.players.index(self)
-      game.players[(my_index + 1)% game.players.size].unscored_dice = []
+      my_index = self.game.players.index(self)
+      self.game.players[(my_index + 1)% game.players.size].unscored_dice = []
+      return nil
     end
-
   end
 
   def initialize
@@ -170,17 +178,26 @@ class AboutExtraCredit < EdgeCase::Koan
 
     stub(game).initial_roll {[5,5,5,3,4]}
     player1.roll
+    assert_equal player1.score, 0
     player1.finish_turn
+    assert_equal player1.score, 500
     assert_equal player2, game.current_player
     stub(game).initial_roll {[1,1,1,3,4]}
     player2.roll
+    assert_equal 0, player2.score
     player2.finish_turn
+    assert_equal 1000, player2.score
     assert_equal player3, game.current_player
     stub(game).initial_roll {[2,2,2,3,4]}
     player3.roll
+    assert_equal 0, player3.score
     player3.finish_turn
+    assert_equal 0, player3.score
     assert_equal player1, game.current_player
 
+    assert_raise(GreedGame::TurnSequenceError) do
+      player2.roll
+    end
   end
 end
 
